@@ -1,5 +1,13 @@
 var fs = require('fs');
 var path = require('path');
+try {
+  var log = require('logging').from(__filename);
+} catch (e) {
+  var log = {
+    info: console.log,
+    error: console.error
+  }
+}
 
 var escapeContents = function(contents) {
   return contents.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, '\\n');
@@ -28,14 +36,20 @@ exports.compile = function(src, options) {
   var readTemplate = function(templatePath) {
     return fs.readFileSync(path.join(options.basePath, templatePath), 'utf8');
   };
+  var isFileExists = function(templatePath){
+    return fs.existsSync(path.join(options.basePath, templatePath));
+  }
 
   var handleMatch = function(match, endCharAndColon, templatePath) {
     var contents;
-
+    if (!isFileExists(templatePath)){
+      log.info("File doesn't exists: " + templatePath);
+      return match;
+    }
     try {
       contents = readTemplate(templatePath);
     } catch(e) {
-      console.error(e);
+      log.error(e);
       return match; //Leave it as-is if the referenced file doesn't exist
     }
 
